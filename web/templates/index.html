@@ -111,12 +111,11 @@
         class="mt-6 p-4 bg-white rounded shadow-md whitespace-pre-wrap break-words"
       ></div>
     </div>
-
     <script>
-      document.addEventListener("htmx:beforeRequest", function (event) {
+      document.addEventListener("htmx:beforeRequest", function () {
         document.getElementById("loading").classList.remove("hidden");
       });
-      document.addEventListener("htmx:afterRequest", function (event) {
+      document.addEventListener("htmx:afterRequest", function () {
         document.getElementById("loading").classList.add("hidden");
       });
       document.addEventListener("htmx:responseError", function (event) {
@@ -133,7 +132,7 @@
             document.getElementById("address").value = data.address;
             document.getElementById("data").value = data.data;
           })
-          .catch((error) => {
+          .catch(() => {
             document.getElementById("output").innerHTML =
               "<div class='text-red-600'>Error generating test data</div>";
           });
@@ -150,7 +149,7 @@
                 "<div class='text-red-600'>Error clearing memory</div>";
             }
           })
-          .catch((error) => {
+          .catch(() => {
             document.getElementById("output").innerHTML =
               "<div class='text-red-600'>Error clearing memory</div>";
           });
@@ -164,7 +163,7 @@
             statsHTML += `<p>Stored Addresses: ${data.history.length}</p></div>`;
             document.getElementById("output").innerHTML = statsHTML;
           })
-          .catch((error) => {
+          .catch(() => {
             document.getElementById("output").innerHTML =
               "<div class='text-red-600'>Error fetching memory stats</div>";
           });
@@ -182,10 +181,42 @@
             historyHTML += "</ul></div>";
             document.getElementById("output").innerHTML = historyHTML;
           })
-          .catch((error) => {
+          .catch(() => {
             document.getElementById("output").innerHTML =
               "<div class='text-red-600'>Error fetching memory history</div>";
           });
+      }
+
+      document.addEventListener("htmx:afterSwap", function (event) {
+        if (event.detail.target.id === "output") {
+          const response = event.detail.xhr.response;
+          const data = JSON.parse(response);
+          const stored = data.stored;
+          const retrieved = data.retrieved;
+          const diffHTML = generateDiffHTML(stored, retrieved);
+          document.getElementById("output").innerHTML = diffHTML;
+        }
+      });
+
+      function generateDiffHTML(stored, retrieved) {
+        let diffHTML = '<div class="overflow-auto"><p>Stored Data: </p><pre>';
+        for (let i = 0; i < stored.length; i++) {
+          if (stored[i] !== retrieved[i]) {
+            diffHTML += `<span class="bg-yellow-300">${stored[i]}</span>`;
+          } else {
+            diffHTML += stored[i];
+          }
+        }
+        diffHTML += "</pre><p>Retrieved Data: </p><pre>";
+        for (let i = 0; i < retrieved.length; i++) {
+          if (stored[i] !== retrieved[i]) {
+            diffHTML += `<span class="bg-green-300">${retrieved[i]}</span>`;
+          } else {
+            diffHTML += retrieved[i];
+          }
+        }
+        diffHTML += "</pre></div>";
+        return diffHTML;
       }
     </script>
   </body>

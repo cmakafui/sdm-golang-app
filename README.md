@@ -1,6 +1,8 @@
+Here's the updated `README.md` with the new functionality:
+
 # Sparse Distributed Memory (SDM) Application
 
-This project is an implementation of Sparse Distributed Memory (SDM) using Go for the backend and a simple HTML/CSS/JavaScript interface enhanced with HTMX and TailwindCSS for the frontend. The application allows storing and retrieving high-dimensional binary vectors.
+This project is an implementation of Sparse Distributed Memory (SDM) using Go for the backend and a simple HTML/CSS/JavaScript interface enhanced with HTMX and TailwindCSS for the frontend. The application allows storing and retrieving high-dimensional binary vectors and visually highlights differences between stored and retrieved data.
 
 ## Table of Contents
 
@@ -22,6 +24,7 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
 
 - Store binary data using a randomly generated or user-provided address.
 - Retrieve stored binary data based on the provided address.
+- Visual comparison between stored and retrieved data.
 - Simple and intuitive web interface with TailwindCSS for modern styling.
 - Copy retrieved data to the clipboard.
 - Clear memory functionality.
@@ -67,7 +70,7 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
    http://localhost:5080
    ```
 
-3. **Use the web interface to generate test data or input your own address and data to store and retrieve information. The output will be displayed below the form.**
+3. **Use the web interface to generate test data or input your own address and data to store and retrieve information. The output will be displayed below the form, with differences between stored and retrieved data highlighted.**
 
 ## Architecture
 
@@ -98,3 +101,11 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
   "data": "1101010101... (1000 bits)"
 }
 ```
+
+## Troubleshooting
+
+If you encounter issues running the application, ensure that all dependencies are installed correctly and that you are using a compatible version of Go. Check the logs for detailed error messages.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
