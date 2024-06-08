@@ -4,55 +4,146 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SDM App</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
     <script src="https://unpkg.com/htmx.org@1.7.0"></script>
   </head>
-  <body>
-    <h1>Sparse Distributed Memory (SDM) App</h1>
-    <form hx-post="/" hx-swap="innerHTML:#output" hx-indicator="#loading">
-      <label for="address">Address:</label>
-      <input type="text" id="address" name="address" required />
-      <br />
-      <label for="data">Data:</label>
-      <input type="text" id="data" name="data" required />
-      <br />
-      <button type="submit">Store & Retrieve</button>
-      <button type="button" onclick="generateTestData()">
-        Generate Test Data
-      </button>
-    </form>
-    <div id="loading" style="display: none">Loading...</div>
-    <div id="output"></div>
+  <body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto p-8">
+      <h1 class="text-4xl font-bold mb-6 text-center">
+        Sparse Distributed Memory (SDM) App
+      </h1>
+      <form
+        id="sdm-form"
+        hx-post="/"
+        hx-target="#output"
+        hx-indicator="#loading"
+        class="bg-white p-6 rounded shadow-md"
+      >
+        <div class="mb-4">
+          <label for="address" class="block text-sm font-medium text-gray-700"
+            >Address:</label
+          >
+          <input
+            type="text"
+            id="address"
+            name="address"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div class="mb-4">
+          <label for="data" class="block text-sm font-medium text-gray-700"
+            >Data:</label
+          >
+          <input
+            type="text"
+            id="data"
+            name="data"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div class="flex space-x-4">
+          <button
+            type="submit"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Store & Retrieve
+          </button>
+          <button
+            type="button"
+            onclick="generateTestData()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Generate Test Data
+          </button>
+          <button
+            type="button"
+            onclick="clearMemory()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Clear Memory
+          </button>
+        </div>
+      </form>
+      <div
+        id="loading"
+        class="mt-4 text-center text-red-600 font-semibold hidden"
+      >
+        Loading...
+      </div>
+      <div id="output" class="mt-6 p-4 bg-white rounded shadow-md"></div>
+    </div>
 
     <script>
       document.addEventListener("htmx:beforeRequest", function (event) {
-        document.getElementById("loading").style.display = "block";
+        document.getElementById("loading").classList.remove("hidden");
       });
       document.addEventListener("htmx:afterRequest", function (event) {
-        document.getElementById("loading").style.display = "none";
+        document.getElementById("loading").classList.add("hidden");
       });
       document.addEventListener("htmx:responseError", function (event) {
         document.getElementById("output").innerHTML =
-          "<div style='color: red;'>Error: " +
+          "<div class='text-red-600'>Error: " +
           event.detail.xhr.responseText +
           "</div>";
       });
 
       function generateTestData() {
-        var addressLength = 1000;
-        var dataLength = 1000;
-        document.getElementById("address").value =
-          generateRandomBinaryString(addressLength);
-        document.getElementById("data").value =
-          generateRandomBinaryString(dataLength);
+        fetch("/generate-random")
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("address").value = data.address;
+            document.getElementById("data").value = data.data;
+          })
+          .catch((error) => {
+            document.getElementById("output").innerHTML =
+              "<div class='text-red-600'>Error generating test data</div>";
+          });
       }
 
-      function generateRandomBinaryString(length) {
-        var result = "";
-        for (var i = 0; i < length; i++) {
-          result += Math.floor(Math.random() * 2);
-        }
-        return result;
+      function clearMemory() {
+        fetch("/clear-memory", { method: "POST" })
+          .then((response) => {
+            if (response.ok) {
+              document.getElementById("output").innerHTML =
+                "<div class='text-green-600'>Memory cleared successfully</div>";
+            } else {
+              document.getElementById("output").innerHTML =
+                "<div class='text-red-600'>Error clearing memory</div>";
+            }
+          })
+          .catch((error) => {
+            document.getElementById("output").innerHTML =
+              "<div class='text-red-600'>Error clearing memory</div>";
+          });
+      }
+
+      document.addEventListener("htmx:afterOnLoad", function (event) {
+        const response = event.detail.xhr.response;
+        const data = JSON.parse(response);
+        document.getElementById("output").innerHTML = `<div>
+              <p>Retrieved Data: <span id="retrieved-data" class="block overflow-x-auto">${data.retrievedData}</span></p>
+              <button onclick="copyToClipboard()" class="inline-flex items-center px-4 py-2 mt-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Copy to Clipboard</button>
+              <div class="text-green-600 mt-2 hidden" id="copy-success">Copied to clipboard!</div>
+          </div>`;
+      });
+
+      function copyToClipboard() {
+        const text = document.getElementById("retrieved-data").textContent;
+        navigator.clipboard.writeText(text).then(
+          function () {
+            const successMessage = document.getElementById("copy-success");
+            successMessage.classList.remove("hidden");
+            setTimeout(() => successMessage.classList.add("hidden"), 2000);
+          },
+          function (err) {
+            console.error("Could not copy text: ", err);
+          }
+        );
       }
     </script>
   </body>

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,12 +46,47 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 		retrievedData := memory.Read([]byte(address))
 		log.Printf("Retrieved data: %s\n", string(retrievedData))
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<div id="output">
-                            <p>Retrieved Data: %s</p>
-                            <button onclick="window.location.reload();">Go Back</button>
-                        </div>`, string(retrievedData))
+		response := map[string]string{
+			"retrievedData": string(retrievedData),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 	}
+}
+
+func generateRandomHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	address := sdm.GenerateRandomBinaryVector(memory.AddressSize())
+	data := sdm.GenerateRandomBinaryVector(memory.AddressSize())
+	response := map[string]string{
+		"address": string(address),
+		"data":    string(data),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func clearMemoryHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	memory.Clear()
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "Memory cleared")
+}
+
+func memoryStatsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	stats := memory.GetStats()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }
 
 func main() {
@@ -59,6 +95,9 @@ func main() {
 	memory = sdm.NewSDM(addressSize, numAddresses)
 
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/generate-random", generateRandomHandler)
+	http.HandleFunc("/clear-memory", clearMemoryHandler)
+	http.HandleFunc("/memory-stats", memoryStatsHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	log.Println("Starting server on :5080")

@@ -11,15 +11,17 @@ type SDM struct {
 	numAddresses int
 	addresses    [][]byte
 	counters     [][]int
+	history      []string
 }
 
 // NewSDM initializes a new sparse distributed memory
 func NewSDM(addressSize, numAddresses int) *SDM {
 	addresses := make([][]byte, numAddresses)
 	counters := make([][]int, numAddresses)
+	history := []string{}
 
 	for i := 0; i < numAddresses; i++ {
-		addresses[i] = generateRandomBinaryVector(addressSize)
+		addresses[i] = GenerateRandomBinaryVector(addressSize)
 		counters[i] = make([]int, addressSize)
 	}
 
@@ -28,11 +30,12 @@ func NewSDM(addressSize, numAddresses int) *SDM {
 		numAddresses: numAddresses,
 		addresses:    addresses,
 		counters:     counters,
+		history:      history,
 	}
 }
 
-// generateRandomBinaryVector generates a random binary vector of a given size
-func generateRandomBinaryVector(size int) []byte {
+// GenerateRandomBinaryVector generates a random binary vector of a given size
+func GenerateRandomBinaryVector(size int) []byte {
 	vector := make([]byte, size)
 	for i := 0; i < size; i++ {
 		vector[i] = byte(rand.Intn(2) + '0')
@@ -54,6 +57,7 @@ func (s *SDM) Write(address, data []byte) {
 			}
 		}
 	}
+	s.history = append(s.history, string(address))
 	log.Println("Write operation completed.")
 }
 
@@ -100,4 +104,24 @@ func hammingDistance(a, b []byte) int {
 // AddressSize returns the size of the address in the SDM
 func (s *SDM) AddressSize() int {
 	return s.addressSize
+}
+
+// Clear clears the memory
+func (s *SDM) Clear() {
+	s.addresses = make([][]byte, s.numAddresses)
+	s.counters = make([][]int, s.numAddresses)
+	s.history = []string{}
+	for i := 0; i < s.numAddresses; i++ {
+		s.addresses[i] = GenerateRandomBinaryVector(s.addressSize)
+		s.counters[i] = make([]int, s.addressSize)
+	}
+	log.Println("Memory cleared.")
+}
+
+// GetStats returns memory stats and history of stored addresses
+func (s *SDM) GetStats() map[string]interface{} {
+	return map[string]interface{}{
+		"totalAddresses": s.numAddresses,
+		"history":        s.history,
+	}
 }

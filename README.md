@@ -1,6 +1,6 @@
 # Sparse Distributed Memory (SDM) Application
 
-This project is an implementation of Sparse Distributed Memory (SDM) using Go for the backend and a simple HTML/CSS/JavaScript interface enhanced with HTMX for the frontend. The application allows storing and retrieving high-dimensional binary vectors.
+This project is an implementation of Sparse Distributed Memory (SDM) using Go for the backend and a simple HTML/CSS/JavaScript interface enhanced with HTMX and TailwindCSS for the frontend. The application allows storing and retrieving high-dimensional binary vectors.
 
 ## Table of Contents
 
@@ -22,8 +22,11 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
 
 - Store binary data using a randomly generated or user-provided address.
 - Retrieve stored binary data based on the provided address.
-- Simple and intuitive web interface.
+- Simple and intuitive web interface with TailwindCSS for modern styling.
+- Copy retrieved data to the clipboard.
+- Clear memory functionality.
 - Logging for debugging and monitoring operations.
+- Responsive design for a seamless experience across devices.
 
 ## Requirements
 
@@ -35,7 +38,7 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/cmakafui/sdm-golang-app.git
+   git clone https://github.com/yourusername/sdm-golang-app.git
    cd sdm-golang-app
    ```
 
@@ -64,7 +67,7 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
    http://localhost:5080
    ```
 
-3. **Use the web interface to generate test data or input your own address and data to store and retrieve information.**
+3. **Use the web interface to generate test data or input your own address and data to store and retrieve information. The output will be displayed below the form.**
 
 ## Architecture
 
@@ -76,13 +79,16 @@ Sparse Distributed Memory (SDM) is a model of long-term memory storage inspired 
 ### Frontend (HTML/CSS/JavaScript)
 
 - **HTML Template:** Provides the structure of the web interface.
-- **CSS:** Provides basic styling for the web interface.
-- **JavaScript:** Handles dynamic interactions and data generation.
+- **CSS (TailwindCSS):** Provides modern and responsive styling for the web interface.
+- **JavaScript (HTMX):** Handles dynamic interactions and data generation.
 
 ## API Endpoints
 
 - **GET /**: Serves the main web interface.
 - **POST /**: Handles storing and retrieving data.
+- **GET /generate-random**: Generates random binary address and data.
+- **POST /clear-memory**: Clears the memory.
+- **GET /memory-stats**: Retrieves memory statistics and history of stored addresses.
 
 ### Example Payload
 
