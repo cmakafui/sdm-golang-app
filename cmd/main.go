@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"text/template"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/cmakafui/sdm-golang-app/internal/sdm"
 )
 
@@ -36,24 +37,25 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if len(address) != memory.AddressSize() || len(data) != memory.AddressSize() {
-			log.Printf("Invalid address or data length: address length %d, data length %d\n", len(address), len(data))
-			http.Error(w, fmt.Sprintf("Address and data must be %d characters long", memory.AddressSize()), http.StatusBadRequest)
+		if len(address) > memory.AddressSize() || len(data)*8 > memory.AddressSize() {
+			log.Printf("Invalid address or data length: address length %d, data length %d\n", len(address), len(data)*8)
+			http.Error(w, fmt.Sprintf("Address must be %d characters long and data must be %d characters long", memory.AddressSize(), memory.AddressSize()/8), http.StatusBadRequest)
 			return
 		}
 
-		memAddress := []byte(address)
-		memData := []byte(data)
+		memAddress := sdm.EncodeTextToBinary(address, memory.AddressSize())
+		memData := sdm.EncodeTextToBinary(data, memory.AddressSize())
 
 		// Store the data in memory
 		memory.Write(memAddress, memData)
 
 		// Retrieve the data from memory
 		retrievedData := memory.ReadWithIterations(memAddress, iterations)
+		retrievedText := sdm.DecodeBinaryToText(retrievedData)
 
 		response := map[string]string{
-			"stored":    string(memData),
-			"retrieved": string(retrievedData),
+			"stored":    data,
+			"retrieved": retrievedText,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -66,11 +68,14 @@ func generateRandomHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
-	address := sdm.GenerateRandomBinaryVector(memory.AddressSize())
-	data := sdm.GenerateRandomBinaryVector(memory.AddressSize())
+
+	// addressSize := uint(memory.AddressSize() / 8)
+	address := gofakeit.UUID()
+	data := gofakeit.Sentence(10)
+
 	response := map[string]string{
-		"address": string(address),
-		"data":    string(data),
+		"address": address,
+		"data":    data,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

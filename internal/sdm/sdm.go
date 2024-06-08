@@ -1,6 +1,7 @@
 package sdm
 
 import (
+	"bytes"
 	"log"
 	"math/rand"
 )
@@ -13,6 +14,8 @@ type SDM struct {
 	counters     [][]int
 	history      []string
 }
+
+const maxHistorySize = 1000 // or any other reasonable limit
 
 // NewSDM initializes a new sparse distributed memory
 func NewSDM(addressSize, numAddresses int) *SDM {
@@ -43,6 +46,59 @@ func GenerateRandomBinaryVector(size int) []byte {
 	return vector
 }
 
+// EncodeTextToBinary converts a string to a binary slice
+func EncodeTextToBinary(text string, size int) []byte {
+	data := []byte(text)
+	binary := make([]byte, size)
+	index := 0
+
+	for i := 0; i < len(data); i++ {
+		for j := 7; j >= 0; j-- {
+			if index < size {
+				if (data[i] & (1 << j)) > 0 {
+					binary[index] = '1'
+				} else {
+					binary[index] = '0'
+				}
+				index++
+			}
+		}
+	}
+
+	for index < size {
+		binary[index] = '0'
+		index++
+	}
+
+	return binary
+}
+
+// DecodeBinaryToText converts a binary slice to a string
+func DecodeBinaryToText(data []byte) string {
+	buffer := bytes.NewBufferString("")
+	for i := 0; i < len(data); i += 8 {
+		var char byte
+		for j := 0; j < 8; j++ {
+			if data[i+j] == '1' {
+				char += 1 << (7 - j)
+			}
+		}
+		if char != 0 {
+			buffer.WriteByte(char)
+		}
+	}
+	return buffer.String()
+}
+
+// GenerateRandomASCIIString generates a random ASCII string of a given size
+func GenerateRandomASCIIString(size int) string {
+	b := make([]byte, size)
+	for i := range b {
+		b[i] = byte(rand.Intn(94) + 33) // ASCII range from '!' to '~'
+	}
+	return string(b)
+}
+
 // Write stores data in the SDM at the given address
 func (s *SDM) Write(address, data []byte) {
 	log.Printf("Writing to address: %s, data: %s\n", string(address), string(data))
@@ -58,17 +114,17 @@ func (s *SDM) Write(address, data []byte) {
 		}
 	}
 	s.history = append(s.history, string(address))
+	if len(s.history) > maxHistorySize {
+		s.history = s.history[1:] // remove oldest entry to maintain size
+	}
 	log.Println("Write operation completed.")
-}
-
-// Read retrieves data from the SDM at the given address using convergence
-func (s *SDM) Read(address []byte) []byte {
-	return s.ReadWithIterations(address, 10)
 }
 
 // ReadWithIterations retrieves data from the SDM at the given address using a specified number of convergence iterations
 func (s *SDM) ReadWithIterations(address []byte, iterations int) []byte {
 	retrieved := make([]byte, s.addressSize)
+	previous := make([]byte, s.addressSize)
+	copy(previous, retrieved)
 
 	for iteration := 0; iteration < iterations; iteration++ {
 		votes := make([]int, s.addressSize)
@@ -87,6 +143,12 @@ func (s *SDM) ReadWithIterations(address []byte, iterations int) []byte {
 			}
 		}
 		log.Printf("Iteration %d: retrieved data: %s\n", iteration, string(retrieved))
+
+		if bytes.Equal(previous, retrieved) {
+			log.Printf("Convergence reached at iteration %d\n", iteration)
+			break
+		}
+		copy(previous, retrieved)
 		address = retrieved
 	}
 
@@ -112,13 +174,11 @@ func (s *SDM) AddressSize() int {
 
 // Clear clears the memory
 func (s *SDM) Clear() {
-	s.addresses = make([][]byte, s.numAddresses)
-	s.counters = make([][]int, s.numAddresses)
-	s.history = []string{}
 	for i := 0; i < s.numAddresses; i++ {
 		s.addresses[i] = GenerateRandomBinaryVector(s.addressSize)
 		s.counters[i] = make([]int, s.addressSize)
 	}
+	s.history = []string{}
 	log.Println("Memory cleared.")
 }
 

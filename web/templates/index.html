@@ -174,11 +174,12 @@
           .then((response) => response.json())
           .then((data) => {
             let historyHTML =
-              '<div><p>Memory History:</p><ul class="list-disc list-inside">';
-            data.forEach((address) => {
-              historyHTML += `<li>${address}</li>`;
+              '<div><p>Memory History:</p><table class="min-w-full bg-white"><thead><tr><th class="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Address (Preview)</th></tr></thead><tbody>';
+            data.forEach((entry) => {
+              const addressPreview = entry.substring(0, 40) + "...";
+              historyHTML += `<tr><td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">${addressPreview}</td></tr>`;
             });
-            historyHTML += "</ul></div>";
+            historyHTML += "</tbody></table></div>";
             document.getElementById("output").innerHTML = historyHTML;
           })
           .catch(() => {
@@ -199,7 +200,8 @@
       });
 
       function generateDiffHTML(stored, retrieved) {
-        let diffHTML = '<div class="overflow-auto"><p>Stored Data: </p><pre>';
+        let diffHTML =
+          '<h2 class="text-xl font-bold text-blue-600 mb-2">Stored Data:</h2><pre>';
         for (let i = 0; i < stored.length; i++) {
           if (stored[i] !== retrieved[i]) {
             diffHTML += `<span class="bg-yellow-300">${stored[i]}</span>`;
@@ -207,7 +209,8 @@
             diffHTML += stored[i];
           }
         }
-        diffHTML += "</pre><p>Retrieved Data: </p><pre>";
+        diffHTML +=
+          '<h2 class="text-xl font-bold text-green-600 mb-2">Retrieved Data:</h2><pre>';
         for (let i = 0; i < retrieved.length; i++) {
           if (stored[i] !== retrieved[i]) {
             diffHTML += `<span class="bg-green-300">${retrieved[i]}</span>`;
