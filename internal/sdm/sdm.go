@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 )
 
 // SDM struct represents the sparse distributed memory
@@ -132,16 +133,14 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 	previous := make([]byte, s.addressSize)
 	copy(previous, retrieved)
 
-	var pool = sync.Pool{
-		New: func() interface{} {
-			votes := make([]int32, s.addressSize)
-			return &votes
-		},
-	}
+	votes := make([]int32, s.addressSize)
+	var wg sync.WaitGroup
 
 	for iteration := 0; iteration < iterations; iteration++ {
-		votes := make([]int32, s.addressSize)
-		var wg sync.WaitGroup
+		// Reset votes
+		for i := range votes {
+			votes[i] = 0
+		}
 
 		// Define the number of goroutines
 		numGoroutines := 10
@@ -150,11 +149,7 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 		// Function to be run by each goroutine
 		voteWorker := func(start, end int) {
 			defer wg.Done()
-			localVotesPtr := pool.Get().(*[]int32)
-			localVotes := *localVotesPtr
-			for i := range localVotes {
-				localVotes[i] = 0
-			}
+			localVotes := make([]int32, s.addressSize)
 
 			for i := start; i < end; i++ {
 				addr := s.addresses[i]
@@ -165,13 +160,9 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 				}
 			}
 
-			// Safely aggregate local votes to the global votes
-			s.mu.Lock()
 			for j := 0; j < s.addressSize; j++ {
-				votes[j] += localVotes[j]
+				atomic.AddInt32(&votes[j], localVotes[j])
 			}
-			s.mu.Unlock()
-			pool.Put(localVotesPtr)
 		}
 
 		// Launch goroutines
