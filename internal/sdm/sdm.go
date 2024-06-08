@@ -12,8 +12,10 @@ type SDM struct {
 	addressSize  int
 	numAddresses int
 	addresses    [][]byte
-	counters     [][]int
+	counters     [][]int32
 	history      []string
+	historyIndex int
+	mu           sync.Mutex
 }
 
 const maxHistorySize = 1000 // or any other reasonable limit
@@ -21,12 +23,12 @@ const maxHistorySize = 1000 // or any other reasonable limit
 // NewSDM initializes a new sparse distributed memory
 func NewSDM(addressSize, numAddresses int) *SDM {
 	addresses := make([][]byte, numAddresses)
-	counters := make([][]int, numAddresses)
-	history := []string{}
+	counters := make([][]int32, numAddresses)
+	history := make([]string, maxHistorySize)
 
 	for i := 0; i < numAddresses; i++ {
 		addresses[i] = GenerateRandomBinaryVector(addressSize)
-		counters[i] = make([]int, addressSize)
+		counters[i] = make([]int32, addressSize)
 	}
 
 	return &SDM{
@@ -114,10 +116,10 @@ func (s *SDM) Write(address, data []byte) {
 			}
 		}
 	}
-	s.history = append(s.history, string(address))
-	if len(s.history) > maxHistorySize {
-		s.history = s.history[1:] // remove oldest entry to maintain size
-	}
+	s.mu.Lock()
+	s.history[s.historyIndex] = string(address)
+	s.historyIndex = (s.historyIndex + 1) % maxHistorySize
+	s.mu.Unlock()
 	log.Println("Write operation completed.")
 }
 
@@ -128,17 +130,17 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 	copy(previous, retrieved)
 
 	for iteration := 0; iteration < iterations; iteration++ {
-		votes := make([]int, s.addressSize)
+		votes := make([]int32, s.addressSize)
 		var wg sync.WaitGroup
 
 		// Define the number of goroutines
 		numGoroutines := 10
-		addressesPerGoroutine := len(s.addresses) / numGoroutines
+		addressesPerGoroutine := (len(s.addresses) + numGoroutines - 1) / numGoroutines
 
 		// Function to be run by each goroutine
 		voteWorker := func(start, end int) {
 			defer wg.Done()
-			localVotes := make([]int, s.addressSize)
+			localVotes := make([]int32, s.addressSize)
 
 			for i := start; i < end; i++ {
 				addr := s.addresses[i]
@@ -150,18 +152,18 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 			}
 
 			// Safely aggregate local votes to the global votes
+			s.mu.Lock()
 			for j := 0; j < s.addressSize; j++ {
-				if localVotes[j] != 0 {
-					votes[j] += localVotes[j]
-				}
+				votes[j] += localVotes[j]
 			}
+			s.mu.Unlock()
 		}
 
 		// Launch goroutines
 		for g := 0; g < numGoroutines; g++ {
 			start := g * addressesPerGoroutine
 			end := start + addressesPerGoroutine
-			if g == numGoroutines-1 {
+			if end > len(s.addresses) {
 				end = len(s.addresses)
 			}
 			wg.Add(1)
@@ -214,21 +216,36 @@ func (s *SDM) AddressSize() int {
 func (s *SDM) Clear() {
 	for i := 0; i < s.numAddresses; i++ {
 		s.addresses[i] = GenerateRandomBinaryVector(s.addressSize)
-		s.counters[i] = make([]int, s.addressSize)
+		s.counters[i] = make([]int32, s.addressSize)
 	}
-	s.history = []string{}
+	s.history = make([]string, maxHistorySize)
+	s.historyIndex = 0
 	log.Println("Memory cleared.")
 }
 
 // GetStats returns memory stats and history of stored addresses
 func (s *SDM) GetStats() map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Create a copy of the history up to the current index
+	history := make([]string, maxHistorySize)
+	copy(history, s.history)
+
 	return map[string]interface{}{
 		"totalAddresses": s.numAddresses,
-		"history":        s.history,
+		"history":        history,
 	}
 }
 
 // GetHistory returns the history of stored addresses
 func (s *SDM) GetHistory() []string {
-	return s.history
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Create a copy of the history up to the current index
+	history := make([]string, maxHistorySize)
+	copy(history, s.history)
+
+	return history
 }
