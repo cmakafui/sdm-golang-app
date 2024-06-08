@@ -1,0 +1,44 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+label {
+  display: inline-block;
+  width: 100px;
+  margin-right: 10px;
+}
+
+input {
+  margin-bottom: 10px;
+  width: 60%;
+}
+
+button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+#loading {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #ff0000;
+}
+
+#output {
+  margin-top: 20px;
+}
+
+#output p {
+  font-size: 18px;
+  margin-bottom: 10px;
+}

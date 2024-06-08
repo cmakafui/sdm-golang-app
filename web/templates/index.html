@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SDM App</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://unpkg.com/htmx.org@1.7.0"></script>
+  </head>
+  <body>
+    <h1>Sparse Distributed Memory (SDM) App</h1>
+    <form hx-post="/" hx-swap="innerHTML:#output" hx-indicator="#loading">
+      <label for="address">Address:</label>
+      <input type="text" id="address" name="address" required />
+      <br />
+      <label for="data">Data:</label>
+      <input type="text" id="data" name="data" required />
+      <br />
+      <button type="submit">Store & Retrieve</button>
+      <button type="button" onclick="generateTestData()">
+        Generate Test Data
+      </button>
+    </form>
+    <div id="loading" style="display: none">Loading...</div>
+    <div id="output"></div>
+
+    <script>
+      document.addEventListener("htmx:beforeRequest", function (event) {
+        document.getElementById("loading").style.display = "block";
+      });
+      document.addEventListener("htmx:afterRequest", function (event) {
+        document.getElementById("loading").style.display = "none";
+      });
+      document.addEventListener("htmx:responseError", function (event) {
+        document.getElementById("output").innerHTML =
+          "<div style='color: red;'>Error: " +
+          event.detail.xhr.responseText +
+          "</div>";
+      });
+
+      function generateTestData() {
+        var addressLength = 1000;
+        var dataLength = 1000;
+        document.getElementById("address").value =
+          generateRandomBinaryString(addressLength);
+        document.getElementById("data").value =
+          generateRandomBinaryString(dataLength);
+      }
+
+      function generateRandomBinaryString(length) {
+        var result = "";
+        for (var i = 0; i < length; i++) {
+          result += Math.floor(Math.random() * 2);
+        }
+        return result;
+      }
+    </script>
+  </body>
+</html>
