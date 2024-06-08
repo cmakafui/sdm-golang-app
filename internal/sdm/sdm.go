@@ -16,6 +16,7 @@ type SDM struct {
 	history      []string
 	historyIndex int
 	mu           sync.Mutex
+	randSource   *rand.Rand
 }
 
 const maxHistorySize = 1000 // or any other reasonable limit
@@ -25,9 +26,10 @@ func NewSDM(addressSize, numAddresses int) *SDM {
 	addresses := make([][]byte, numAddresses)
 	counters := make([][]int32, numAddresses)
 	history := make([]string, maxHistorySize)
+	randSource := rand.New(rand.NewSource(rand.Int63()))
 
 	for i := 0; i < numAddresses; i++ {
-		addresses[i] = GenerateRandomBinaryVector(addressSize)
+		addresses[i] = GenerateRandomBinaryVector(addressSize, randSource)
 		counters[i] = make([]int32, addressSize)
 	}
 
@@ -37,14 +39,15 @@ func NewSDM(addressSize, numAddresses int) *SDM {
 		addresses:    addresses,
 		counters:     counters,
 		history:      history,
+		randSource:   randSource,
 	}
 }
 
 // GenerateRandomBinaryVector generates a random binary vector of a given size
-func GenerateRandomBinaryVector(size int) []byte {
+func GenerateRandomBinaryVector(size int, randSource *rand.Rand) []byte {
 	vector := make([]byte, size)
 	for i := 0; i < size; i++ {
-		vector[i] = byte(rand.Intn(2) + '0')
+		vector[i] = byte(randSource.Intn(2) + '0')
 	}
 	return vector
 }
@@ -214,13 +217,18 @@ func (s *SDM) AddressSize() int {
 
 // Clear clears the memory
 func (s *SDM) Clear() {
+	// Generate all random numbers at once
+	randomBits := make([]byte, s.numAddresses*s.addressSize)
+	s.randSource.Read(randomBits)
+
 	// Reset addresses and counters to their initial state
 	for i := 0; i < s.numAddresses; i++ {
 		for j := 0; j < s.addressSize; j++ {
-			s.addresses[i][j] = byte(rand.Intn(2) + '0')
+			s.addresses[i][j] = randomBits[i*s.addressSize+j]%2 + '0'
 			s.counters[i][j] = 0
 		}
 	}
+
 	// Clear the history efficiently by resetting the index
 	s.historyIndex = 0
 	log.Println("Memory cleared.")
