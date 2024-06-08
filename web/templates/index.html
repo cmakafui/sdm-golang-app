@@ -10,9 +10,10 @@
     />
     <script src="https://unpkg.com/htmx.org@1.7.0"></script>
   </head>
+
   <body class="bg-gray-100 text-gray-800">
-    <div class="container mx-auto p-8">
-      <h1 class="text-4xl font-bold mb-6 text-center">
+    <div class="container mx-auto p-4 sm:p-8">
+      <h1 class="text-2xl sm:text-4xl font-bold mb-6 text-center">
         Sparse Distributed Memory (SDM) App
       </h1>
       <form
@@ -21,7 +22,7 @@
         hx-target="#output"
         hx-swap="innerHTML"
         hx-indicator="#loading"
-        class="bg-white p-6 rounded shadow-md"
+        class="bg-white p-4 sm:p-6 rounded shadow-md"
       >
         <div class="mb-4">
           <label for="address" class="block text-sm font-medium text-gray-700"
@@ -63,38 +64,40 @@
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-        <div class="flex space-x-4">
+        <div
+          class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0"
+        >
           <button
             type="submit"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
           >
             Store & Retrieve
           </button>
           <button
             type="button"
             onclick="generateTestData()"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Generate Test Data
           </button>
           <button
             type="button"
             onclick="clearMemory()"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             Clear Memory
           </button>
           <button
             type="button"
             onclick="fetchMemoryStats()"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Memory Stats
           </button>
           <button
             type="button"
             onclick="fetchMemoryHistory()"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
           >
             Memory History
           </button>
@@ -108,7 +111,7 @@
       </div>
       <div
         id="output"
-        class="mt-6 p-4 bg-white rounded shadow-md whitespace-pre-wrap break-words"
+        class="mt-6 p-4 bg-white rounded shadow-md overflow-auto break-words"
       ></div>
     </div>
     <script>
@@ -177,7 +180,7 @@
               '<div><p>Memory History:</p><table class="min-w-full bg-white"><thead><tr><th class="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Address (Preview)</th></tr></thead><tbody>';
             data.forEach((entry) => {
               const addressPreview = entry.substring(0, 40) + "...";
-              historyHTML += `<tr><td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">${addressPreview}</td></tr>`;
+              historyHTML += `<tr><td class="px-6 py-4 whitespace-nowrap border-b border-gray-300">${addressPreview}</td></tr>`;
             });
             historyHTML += "</tbody></table></div>";
             document.getElementById("output").innerHTML = historyHTML;
@@ -201,7 +204,7 @@
 
       function generateDiffHTML(stored, retrieved) {
         let diffHTML =
-          '<h2 class="text-xl font-bold text-blue-600 mb-2">Stored Data:</h2><pre>';
+          '<h2 class="text-xl font-bold text-blue-600 mb-2">Stored Data:</h2><pre class="whitespace-pre-wrap break-words">';
         for (let i = 0; i < stored.length; i++) {
           if (stored[i] !== retrieved[i]) {
             diffHTML += `<span class="bg-yellow-300">${stored[i]}</span>`;
@@ -210,7 +213,7 @@
           }
         }
         diffHTML +=
-          '<h2 class="text-xl font-bold text-green-600 mb-2">Retrieved Data:</h2><pre>';
+          '</pre><h2 class="text-xl font-bold text-green-600 mb-2">Retrieved Data:</h2><pre class="whitespace-pre-wrap break-words">';
         for (let i = 0; i < retrieved.length; i++) {
           if (stored[i] !== retrieved[i]) {
             diffHTML += `<span class="bg-green-300">${retrieved[i]}</span>`;
@@ -218,7 +221,7 @@
             diffHTML += retrieved[i];
           }
         }
-        diffHTML += "</pre></div>";
+        diffHTML += "</pre>";
         return diffHTML;
       }
     </script>
