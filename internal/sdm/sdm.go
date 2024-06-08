@@ -15,7 +15,7 @@ type SDM struct {
 	counters     [][]int32
 	history      []string
 	historyIndex int
-	mu           sync.Mutex
+	mu           sync.RWMutex
 	randSource   *rand.Rand
 }
 
@@ -132,6 +132,12 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 	previous := make([]byte, s.addressSize)
 	copy(previous, retrieved)
 
+	var pool = sync.Pool{
+		New: func() interface{} {
+			return make([]int32, s.addressSize)
+		},
+	}
+
 	for iteration := 0; iteration < iterations; iteration++ {
 		votes := make([]int32, s.addressSize)
 		var wg sync.WaitGroup
@@ -143,7 +149,11 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 		// Function to be run by each goroutine
 		voteWorker := func(start, end int) {
 			defer wg.Done()
-			localVotes := make([]int32, s.addressSize)
+			localVotes := pool.Get().([]int32)
+			defer pool.Put(localVotes)
+			for i := range localVotes {
+				localVotes[i] = 0
+			}
 
 			for i := start; i < end; i++ {
 				addr := s.addresses[i]
@@ -185,17 +195,13 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 			}
 		}
 
-		log.Printf("Iteration %d: retrieved data: %s\n", iteration, string(retrieved))
-
 		if bytes.Equal(previous, retrieved) {
-			log.Printf("Convergence reached at iteration %d\n", iteration)
 			break
 		}
 		copy(previous, retrieved)
 		address = retrieved
 	}
 
-	log.Printf("Final retrieved data: %s\n", string(retrieved))
 	return retrieved
 }
 
@@ -217,11 +223,9 @@ func (s *SDM) AddressSize() int {
 
 // Clear clears the memory
 func (s *SDM) Clear() {
-	// Generate all random numbers at once
 	randomBits := make([]byte, s.numAddresses*s.addressSize)
 	s.randSource.Read(randomBits)
 
-	// Reset addresses and counters to their initial state
 	for i := 0; i < s.numAddresses; i++ {
 		for j := 0; j < s.addressSize; j++ {
 			s.addresses[i][j] = randomBits[i*s.addressSize+j]%2 + '0'
@@ -229,17 +233,18 @@ func (s *SDM) Clear() {
 		}
 	}
 
-	// Clear the history efficiently by resetting the index
+	s.mu.Lock()
 	s.historyIndex = 0
+	s.mu.Unlock()
+
 	log.Println("Memory cleared.")
 }
 
 // GetStats returns memory stats and history of stored addresses
 func (s *SDM) GetStats() map[string]interface{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	// Create a copy of the history up to the current index
 	history := make([]string, maxHistorySize)
 	copy(history, s.history)
 
@@ -251,10 +256,9 @@ func (s *SDM) GetStats() map[string]interface{} {
 
 // GetHistory returns the history of stored addresses
 func (s *SDM) GetHistory() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	// Create a copy of the history up to the current index
 	history := make([]string, maxHistorySize)
 	copy(history, s.history)
 
