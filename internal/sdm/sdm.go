@@ -134,7 +134,8 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 
 	var pool = sync.Pool{
 		New: func() interface{} {
-			return make([]int32, s.addressSize)
+			votes := make([]int32, s.addressSize)
+			return &votes
 		},
 	}
 
@@ -149,8 +150,8 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 		// Function to be run by each goroutine
 		voteWorker := func(start, end int) {
 			defer wg.Done()
-			localVotes := pool.Get().([]int32)
-			defer pool.Put(localVotes)
+			localVotesPtr := pool.Get().(*[]int32)
+			localVotes := *localVotesPtr
 			for i := range localVotes {
 				localVotes[i] = 0
 			}
@@ -170,6 +171,7 @@ func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte 
 				votes[j] += localVotes[j]
 			}
 			s.mu.Unlock()
+			pool.Put(localVotesPtr)
 		}
 
 		// Launch goroutines
