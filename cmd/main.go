@@ -49,8 +49,8 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		// Store the data in memory
 		memory.Write(memAddress, memData)
 
-		// Retrieve the data from memory
-		retrievedData := memory.ReadWithIterations(memAddress, iterations)
+		// Retrieve the data from memory using parallel processing
+		retrievedData := memory.ReadWithIterationsParallel(memAddress, iterations)
 		retrievedText := sdm.DecodeBinaryToText(retrievedData)
 
 		response := map[string]string{

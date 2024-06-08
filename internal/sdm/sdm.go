@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"math/rand"
+	"sync"
 )
 
 // SDM struct represents the sparse distributed memory
@@ -120,21 +121,57 @@ func (s *SDM) Write(address, data []byte) {
 	log.Println("Write operation completed.")
 }
 
-// ReadWithIterations retrieves data from the SDM at the given address using a specified number of convergence iterations
-func (s *SDM) ReadWithIterations(address []byte, iterations int) []byte {
+// ReadWithIterationsParallel retrieves data from the SDM at the given address using a specified number of convergence iterations with parallel processing
+func (s *SDM) ReadWithIterationsParallel(address []byte, iterations int) []byte {
 	retrieved := make([]byte, s.addressSize)
 	previous := make([]byte, s.addressSize)
 	copy(previous, retrieved)
 
 	for iteration := 0; iteration < iterations; iteration++ {
 		votes := make([]int, s.addressSize)
-		for i, addr := range s.addresses {
-			if hammingDistance(address, addr) < s.addressSize/2 {
-				for j := 0; j < s.addressSize; j++ {
-					votes[j] += s.counters[i][j]
+		var wg sync.WaitGroup
+
+		// Define the number of goroutines
+		numGoroutines := 10
+		addressesPerGoroutine := len(s.addresses) / numGoroutines
+
+		// Function to be run by each goroutine
+		voteWorker := func(start, end int) {
+			defer wg.Done()
+			localVotes := make([]int, s.addressSize)
+
+			for i := start; i < end; i++ {
+				addr := s.addresses[i]
+				if hammingDistance(address, addr) < s.addressSize/2 {
+					for j := 0; j < s.addressSize; j++ {
+						localVotes[j] += s.counters[i][j]
+					}
+				}
+			}
+
+			// Safely aggregate local votes to the global votes
+			for j := 0; j < s.addressSize; j++ {
+				if localVotes[j] != 0 {
+					votes[j] += localVotes[j]
 				}
 			}
 		}
+
+		// Launch goroutines
+		for g := 0; g < numGoroutines; g++ {
+			start := g * addressesPerGoroutine
+			end := start + addressesPerGoroutine
+			if g == numGoroutines-1 {
+				end = len(s.addresses)
+			}
+			wg.Add(1)
+			go voteWorker(start, end)
+		}
+
+		// Wait for all goroutines to finish
+		wg.Wait()
+
+		// Determine the retrieved bits based on the votes
 		for j := 0; j < s.addressSize; j++ {
 			if votes[j] > 0 {
 				retrieved[j] = '1'
@@ -142,6 +179,7 @@ func (s *SDM) ReadWithIterations(address []byte, iterations int) []byte {
 				retrieved[j] = '0'
 			}
 		}
+
 		log.Printf("Iteration %d: retrieved data: %s\n", iteration, string(retrieved))
 
 		if bytes.Equal(previous, retrieved) {
