@@ -19,6 +19,7 @@
         id="sdm-form"
         hx-post="/"
         hx-target="#output"
+        hx-swap="innerHTML"
         hx-indicator="#loading"
         class="bg-white p-6 rounded shadow-md"
       >
@@ -46,6 +47,22 @@
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
+        <div class="mb-4">
+          <label
+            for="iterations"
+            class="block text-sm font-medium text-gray-700"
+            >Iterations:</label
+          >
+          <input
+            type="number"
+            id="iterations"
+            name="iterations"
+            value="10"
+            min="1"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
         <div class="flex space-x-4">
           <button
             type="submit"
@@ -67,6 +84,20 @@
           >
             Clear Memory
           </button>
+          <button
+            type="button"
+            onclick="fetchMemoryStats()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Memory Stats
+          </button>
+          <button
+            type="button"
+            onclick="fetchMemoryHistory()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+          >
+            Memory History
+          </button>
         </div>
       </form>
       <div
@@ -75,7 +106,10 @@
       >
         Loading...
       </div>
-      <div id="output" class="mt-6 p-4 bg-white rounded shadow-md"></div>
+      <div
+        id="output"
+        class="mt-6 p-4 bg-white rounded shadow-md whitespace-pre-wrap break-words"
+      ></div>
     </div>
 
     <script>
@@ -122,28 +156,36 @@
           });
       }
 
-      document.addEventListener("htmx:afterOnLoad", function (event) {
-        const response = event.detail.xhr.response;
-        const data = JSON.parse(response);
-        document.getElementById("output").innerHTML = `<div>
-              <p>Retrieved Data: <span id="retrieved-data" class="block overflow-x-auto">${data.retrievedData}</span></p>
-              <button onclick="copyToClipboard()" class="inline-flex items-center px-4 py-2 mt-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Copy to Clipboard</button>
-              <div class="text-green-600 mt-2 hidden" id="copy-success">Copied to clipboard!</div>
-          </div>`;
-      });
+      function fetchMemoryStats() {
+        fetch("/memory-stats")
+          .then((response) => response.json())
+          .then((data) => {
+            let statsHTML = `<div><p>Total Addresses: ${data.totalAddresses}</p>`;
+            statsHTML += `<p>Stored Addresses: ${data.history.length}</p></div>`;
+            document.getElementById("output").innerHTML = statsHTML;
+          })
+          .catch((error) => {
+            document.getElementById("output").innerHTML =
+              "<div class='text-red-600'>Error fetching memory stats</div>";
+          });
+      }
 
-      function copyToClipboard() {
-        const text = document.getElementById("retrieved-data").textContent;
-        navigator.clipboard.writeText(text).then(
-          function () {
-            const successMessage = document.getElementById("copy-success");
-            successMessage.classList.remove("hidden");
-            setTimeout(() => successMessage.classList.add("hidden"), 2000);
-          },
-          function (err) {
-            console.error("Could not copy text: ", err);
-          }
-        );
+      function fetchMemoryHistory() {
+        fetch("/memory-history")
+          .then((response) => response.json())
+          .then((data) => {
+            let historyHTML =
+              '<div><p>Memory History:</p><ul class="list-disc list-inside">';
+            data.forEach((address) => {
+              historyHTML += `<li>${address}</li>`;
+            });
+            historyHTML += "</ul></div>";
+            document.getElementById("output").innerHTML = historyHTML;
+          })
+          .catch((error) => {
+            document.getElementById("output").innerHTML =
+              "<div class='text-red-600'>Error fetching memory history</div>";
+          });
       }
     </script>
   </body>

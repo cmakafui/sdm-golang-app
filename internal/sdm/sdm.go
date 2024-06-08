@@ -63,10 +63,14 @@ func (s *SDM) Write(address, data []byte) {
 
 // Read retrieves data from the SDM at the given address using convergence
 func (s *SDM) Read(address []byte) []byte {
-	convergenceIterations := 10
+	return s.ReadWithIterations(address, 10)
+}
+
+// ReadWithIterations retrieves data from the SDM at the given address using a specified number of convergence iterations
+func (s *SDM) ReadWithIterations(address []byte, iterations int) []byte {
 	retrieved := make([]byte, s.addressSize)
 
-	for iteration := 0; iteration < convergenceIterations; iteration++ {
+	for iteration := 0; iteration < iterations; iteration++ {
 		votes := make([]int, s.addressSize)
 		for i, addr := range s.addresses {
 			if hammingDistance(address, addr) < s.addressSize/2 {
@@ -124,4 +128,9 @@ func (s *SDM) GetStats() map[string]interface{} {
 		"totalAddresses": s.numAddresses,
 		"history":        s.history,
 	}
+}
+
+// GetHistory returns the history of stored addresses
+func (s *SDM) GetHistory() []string {
+	return s.history
 }
