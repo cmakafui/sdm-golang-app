@@ -214,11 +214,14 @@ func (s *SDM) AddressSize() int {
 
 // Clear clears the memory
 func (s *SDM) Clear() {
+	// Reset addresses and counters to their initial state
 	for i := 0; i < s.numAddresses; i++ {
-		s.addresses[i] = GenerateRandomBinaryVector(s.addressSize)
-		s.counters[i] = make([]int32, s.addressSize)
+		for j := 0; j < s.addressSize; j++ {
+			s.addresses[i][j] = byte(rand.Intn(2) + '0')
+			s.counters[i][j] = 0
+		}
 	}
-	s.history = make([]string, maxHistorySize)
+	// Clear the history efficiently by resetting the index
 	s.historyIndex = 0
 	log.Println("Memory cleared.")
 }
