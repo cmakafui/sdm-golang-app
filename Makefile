@@ -1,33 +1,34 @@
-# Variables
-DOCKER_COMPOSE = docker compose
-DOCKER_COMPOSE_FILE = compose.yaml
+# Makefile
 
-# Targets
-.PHONY: build up down stop restart logs shell
+.PHONY: dev-up dev-down dev-logs dev-rebuild dev-restart
+.PHONY: up down logs rebuild restart
 
-# Build the Docker images
-build:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) build
+# Targets for development environment
+dev-up:
+        docker compose -f compose-dev.yaml up --build -d
 
-# Start the Docker containers
-up: build
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up -d
+dev-down:
+        docker compose -f compose-dev.yaml down
 
-# Stop the Docker containers
-stop:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) stop
+dev-logs:
+        docker compose -f compose-dev.yaml logs -f
 
-# Restart the Docker containers
-restart: stop up
+dev-rebuild:
+        docker compose -f compose-dev.yaml up --build -d --force-recreate
 
-# Remove the Docker containers
+dev-restart: dev-down dev-up
+
+# Targets for production environment
+up:
+        docker compose -f compose-prod.yaml up --build -d
+
 down:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down
+        docker compose -f compose-prod.yaml down
 
-# View logs from the Docker containers
 logs:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) logs -f
+        docker compose -f compose-prod.yaml logs -f
 
-# Access the shell inside the running container
-shell:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) exec sdm-app /bin/sh
+rebuild:
+        docker compose -f compose-prod.yaml up --build -d --force-recreate
+
+restart: down up

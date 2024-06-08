@@ -1,0 +1,8 @@
+services:
+  sdm-app:
+    container_name: sdm-app
+    build:
+      context: .
+      target: final
+    ports:
+      - 5080:5080

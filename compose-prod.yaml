@@ -1,0 +1,29 @@
+services:
+  sdm-app:
+    container_name: sdm-app
+    build:
+      context: .
+      target: final
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sdm-app.entrypoints=web"
+      - "traefik.http.routers.sdm-app.rule=Host(`sdm-app.guatanga.xyz`)"
+      - "traefik.http.middlewares.sdm-app-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.sdm-app.middlewares=sdm-app-https-redirect"
+
+      # Secure Router setup
+      - "traefik.http.routers.sdm-app-secure.entrypoints=web-secure"
+      - "traefik.http.routers.sdm-app-secure.rule=Host(`sdm-app.guatanga.xyz`)"
+      - "traefik.http.routers.sdm-app-secure.tls=true"
+      - "traefik.http.routers.sdm-app-secure.service=sdm-app"
+      - "traefik.http.routers.sdm-app-secure.middlewares=secHeaders@file, autodetectContenttype@file"
+      - "traefik.http.services.sdm-app.loadbalancer.server.port=5080"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
