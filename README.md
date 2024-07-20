@@ -1,5 +1,3 @@
-Here's the updated `README.md` with the new functionality:
-
 # Sparse Distributed Memory (SDM) Application
 
 This project is an implementation of Sparse Distributed Memory (SDM) using Go for the backend and a simple HTML/CSS/JavaScript interface enhanced with HTMX and TailwindCSS for the frontend. The application allows storing and retrieving high-dimensional binary vectors and visually highlights differences between stored and retrieved data.
